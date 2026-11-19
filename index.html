@@ -96,16 +96,16 @@
 </head>
 <body class="min-h-screen pb-24">
 
-  <!-- Digital Upload Successful Popup -->
+  <!-- Digital Status / Upload Successful Popup -->
   <div id="digitalSuccessPopup" class="fixed inset-0 bg-black/70 backdrop-blur-[2px] hidden items-center justify-center z-[120] p-4">
-    <div class="digital-pop bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-emerald-400 rounded-3xl p-6 max-w-xs w-full text-center shadow-[0_0_40px_rgba(16,185,129,0.45)]">
-      <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-400 flex items-center justify-center mx-auto text-3xl mb-3 shadow-inner">
+    <div id="digitalPopupCard" class="digital-pop bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-emerald-400 rounded-3xl p-6 max-w-xs w-full text-center shadow-[0_0_40px_rgba(16,185,129,0.45)]">
+      <div id="digitalPopupIcon" class="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-400 flex items-center justify-center mx-auto text-3xl mb-3 shadow-inner">
         <i class="fa-solid fa-circle-check"></i>
       </div>
-      <div class="inline-block bg-emerald-500/20 text-emerald-300 text-[11px] font-bold px-3 py-0.5 rounded-full mb-1.5">
+      <div id="digitalPopupBadge" class="inline-block bg-emerald-500/20 text-emerald-300 text-[11px] font-bold px-3 py-0.5 rounded-full mb-1.5">
         INSTANT LIVE
       </div>
-      <h3 class="text-xl font-extrabold text-white">Upload Successful!</h3>
+      <h3 id="digitalPopupTitle" class="text-xl font-extrabold text-white">Upload Successful!</h3>
       <p id="digitalSuccessText" class="text-xs text-emerald-200 mt-1.5 leading-relaxed font-medium">
         আপলোড সফল হয়েছে এবং সাথে সাথে লাইভ হয়ে গেছে!
       </p>
@@ -451,7 +451,6 @@
   </div>
 
   <script>
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
     const firebaseConfig = {
       apiKey: "AIzaSyDJmu9uD5rT5ee1jNLpMQaTVIa_-yTrPzw",
       authDomain: "public-service-11054.firebaseapp.com",
@@ -467,14 +466,14 @@
     const db = firebase.database();
     const storage = firebase.storage();
 
-    const LOCAL_CACHE_KEY = "publicCabSiteCache_v5";
+    const LOCAL_CACHE_KEY = "publicCabSiteCache_v6";
 
     let appData = {
       logo: "",
       guideline: "",
-      customerAndroid: { url: "", size: "6.7 MB", fileName: "", ready: false },
-      driverAndroid: { url: "", size: "", fileName: "", ready: false },
-      customerIos: { url: "", size: "", fileName: "", ready: false },
+      customerAndroid: { url: "", size: "6.7 MB", fileName: "" },
+      driverAndroid: { url: "", size: "", fileName: "" },
+      customerIos: { url: "", size: "", fileName: "" },
       meta: {
         whatsapp: "9609546435",
         call: "+911169269427",
@@ -484,23 +483,50 @@
     };
 
     let popupTimer = null;
-    function showUploadSuccessSMS(message) {
+    function showDigitalPopup(title, message, isError = false) {
       const popup = document.getElementById('digitalSuccessPopup');
+      const card = document.getElementById('digitalPopupCard');
+      const icon = document.getElementById('digitalPopupIcon');
+      const badge = document.getElementById('digitalPopupBadge');
+      const titleEl = document.getElementById('digitalPopupTitle');
       const textEl = document.getElementById('digitalSuccessText');
-      textEl.innerText = message || "আপলোড সফল হয়েছে এবং সাথে সাথে লাইভ হয়ে গেছে!";
+
+      titleEl.innerText = title;
+      textEl.innerText = message;
+
+      if (isError) {
+        card.className = "digital-pop bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-rose-400 rounded-3xl p-6 max-w-xs w-full text-center shadow-[0_0_40px_rgba(244,63,94,0.35)]";
+        icon.className = "w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-400/50 text-rose-400 flex items-center justify-center mx-auto text-3xl mb-3 shadow-inner";
+        icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+        badge.className = "inline-block bg-rose-500/20 text-rose-300 text-[11px] font-bold px-3 py-0.5 rounded-full mb-1.5";
+        badge.innerText = "NOTICE";
+        textEl.className = "text-xs text-rose-200 mt-1.5 leading-relaxed font-medium";
+      } else {
+        card.className = "digital-pop bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-emerald-400 rounded-3xl p-6 max-w-xs w-full text-center shadow-[0_0_40px_rgba(16,185,129,0.45)]";
+        icon.className = "w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-400 flex items-center justify-center mx-auto text-3xl mb-3 shadow-inner";
+        icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+        badge.className = "inline-block bg-emerald-500/20 text-emerald-300 text-[11px] font-bold px-3 py-0.5 rounded-full mb-1.5";
+        badge.innerText = "INSTANT LIVE";
+        textEl.className = "text-xs text-emerald-200 mt-1.5 leading-relaxed font-medium";
+      }
+
       popup.classList.remove('hidden');
       popup.classList.add('flex');
 
       clearTimeout(popupTimer);
       popupTimer = setTimeout(() => {
         closeDigitalSuccess();
-      }, 2400);
+      }, 2800);
     }
 
     function closeDigitalSuccess() {
       const popup = document.getElementById('digitalSuccessPopup');
       popup.classList.add('hidden');
       popup.classList.remove('flex');
+    }
+
+    function hasValidUrl(item) {
+      return Boolean(item && typeof item.url === 'string' && item.url.trim() !== '' && !item.url.startsWith('blob:'));
     }
 
     function renderAllUI(data) {
@@ -537,23 +563,20 @@
         setBadge('statusGuideline', 'Default', false);
       }
 
-      const cAnd = appData.customerAndroid;
-      if (cAnd && (cAnd.url || cAnd.ready || cAnd.fileName)) {
+      if (hasValidUrl(appData.customerAndroid)) {
         setBadge('statusCustomerAndroid', 'Live ✓', true);
-        if (cAnd.size) document.getElementById('appSizeText').innerText = cAnd.size;
+        if (appData.customerAndroid.size) document.getElementById('appSizeText').innerText = appData.customerAndroid.size;
       } else {
         setBadge('statusCustomerAndroid', 'Not Uploaded', false);
       }
 
-      const dAnd = appData.driverAndroid;
-      if (dAnd && (dAnd.url || dAnd.ready || dAnd.fileName)) {
+      if (hasValidUrl(appData.driverAndroid)) {
         setBadge('statusDriverAndroid', 'Live ✓', true);
       } else {
         setBadge('statusDriverAndroid', 'Not Uploaded', false);
       }
 
-      const cIos = appData.customerIos;
-      if (cIos && (cIos.url || cIos.ready || cIos.fileName)) {
+      if (hasValidUrl(appData.customerIos)) {
         setBadge('statusCustomerIos', 'Live ✓', true);
       } else {
         setBadge('statusCustomerIos', 'Not Uploaded', false);
@@ -611,6 +634,7 @@
           const link = document.createElement('a');
           link.href = url;
           link.download = fileName || 'PublicCab.apk';
+          link.rel = 'noopener noreferrer';
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -619,7 +643,7 @@
 
     function handleAppDownload(type) {
       const item = appData[type];
-      if (!item || !item.url || item.url.trim() === "" || item.url.startsWith("blob:")) {
+      if (!hasValidUrl(item)) {
         let label = "অ্যাপটি";
         if (type === 'customerAndroid') label = "Customer Android App (.APK)";
         if (type === 'driverAndroid') label = "Driver Android App (.APK)";
@@ -670,7 +694,7 @@
       });
     }
 
-    function compressImageFast(file, maxWidth = 700, quality = 0.7) {
+    function compressImageFast(file, maxWidth = 700, quality = 0.72) {
       return new Promise((resolve) => {
         const img = new Image();
         const url = URL.createObjectURL(file);
@@ -697,131 +721,132 @@
       });
     }
 
-    function fastStorageRace(storageRef, file, progBar, maxWaitMs = 2500) {
-      return new Promise((resolve) => {
-        let finished = false;
-        const done = (val) => {
-          if (!finished) {
-            finished = true;
-            clearTimeout(t);
-            resolve(val);
-          }
-        };
-
-        const t = setTimeout(() => done(null), maxWaitMs);
-
+    function uploadToStorageComplete(storageRef, file, progBar) {
+      return new Promise((resolve, reject) => {
         try {
           const uploadTask = storageRef.put(file, {
             contentDisposition: `attachment; filename="${file.name}"`
           });
+
           uploadTask.on(
             'state_changed',
             (snap) => {
               if (progBar && snap.totalBytes > 0) {
-                const pct = Math.min(95, Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
+                const pct = Math.min(98, Math.max(10, Math.round((snap.bytesTransferred / snap.totalBytes) * 100)));
                 progBar.style.width = pct + "%";
               }
             },
-            () => done(null),
+            (err) => reject(err),
             async () => {
               try {
-                const url = await uploadTask.snapshot.ref.getDownloadURL();
-                done(url);
+                const downloadUrl = await uploadTask.snapshot.ref.getDownloadURL();
+                resolve(downloadUrl);
               } catch (e) {
-                done(null);
+                reject(e);
               }
             }
           );
-        } catch (e) {
-          done(null);
+        } catch (err) {
+          reject(err);
         }
       });
-    }
-
-    function commitInstantLive(path, payload, progBox, progBar, msg) {
-      if (progBar) progBar.style.width = "100%";
-      const keyName = path.split('/').pop();
-      renderAllUI({ ...appData, [keyName]: payload });
-      db.ref(path).set(payload).catch(() => {});
-      showUploadSuccessSMS(msg || "আপলোড সফল হয়েছে এবং সাথে সাথে লাইভ হয়ে গেছে!");
-
-      setTimeout(() => {
-        if (progBox) progBox.classList.add('hidden');
-        if (progBar) progBar.style.width = "0%";
-      }, 300);
     }
 
     async function saveAppBuild(key, fileInputId) {
       const fileInput = document.getElementById(fileInputId);
       const file = fileInput.files[0];
-      if (!file) return;
+      if (!file) {
+        showDigitalPopup("ফাইল সিলেক্ট করুন", "দয়া করে আগে একটি APK ফাইল সিলেক্ট করুন।", true);
+        return;
+      }
 
       const maxBytes = 20 * 1024 * 1024;
-      const safeFile = file.size > maxBytes ? file.slice(0, maxBytes, file.type) : file;
-      const sizeMB = (Math.min(file.size, maxBytes) / (1024 * 1024)).toFixed(1) + " MB";
+      if (file.size > maxBytes) {
+        showDigitalPopup("ফাইল সাইজ ২০ MB-এর বেশি", "দয়া করে ২০ MB বা তার কম সাইজের APK ফাইল দিন।", true);
+        return;
+      }
 
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1) + " MB";
       const progBox = document.getElementById(`prog_${key}`);
       const progBar = document.getElementById(`bar_${key}`);
       progBox.classList.remove('hidden');
-      progBar.style.width = "45%";
+      progBar.style.width = "15%";
 
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const storageRef = storage.ref(`publicCab/${key}/${Date.now()}_${safeName}`);
 
-      const fastUrl = await fastStorageRace(storageRef, safeFile, progBar, 2500);
-      const finalUrl = fastUrl || (appData[key]?.url && !appData[key].url.startsWith("blob:") ? appData[key].url : "");
+      try {
+        const downloadUrl = await uploadToStorageComplete(storageRef, file, progBar);
+        if (!downloadUrl) throw new Error("Empty URL");
 
-      const payload = {
-        url: finalUrl,
-        size: sizeMB,
-        fileName: file.name,
-        ready: true,
-        updatedAt: Date.now()
-      };
+        const payload = {
+          url: downloadUrl,
+          size: sizeMB,
+          fileName: file.name,
+          updatedAt: Date.now()
+        };
 
-      fileInput.value = "";
-      commitInstantLive(
-        `publicCabSite/${key}`,
-        payload,
-        progBox,
-        progBar,
-        `${file.name} (${sizeMB}) আপলোড সফল এবং লাইভ হয়ে গেছে!`
-      );
+        await db.ref(`publicCabSite/${key}`).set(payload);
+        renderAllUI({ ...appData, [key]: payload });
+        progBar.style.width = "100%";
+        fileInput.value = "";
 
-      if (!fastUrl) {
-        try {
-          const task = storageRef.put(safeFile, {
-            contentDisposition: `attachment; filename="${file.name}"`
-          });
-          task.then(async () => {
-            const url = await task.snapshot.ref.getDownloadURL();
-            await db.ref(`publicCabSite/${key}`).update({ url });
-          }).catch(() => {});
-        } catch (e) {}
+        setTimeout(() => {
+          progBox.classList.add('hidden');
+          progBar.style.width = "0%";
+        }, 350);
+
+        showDigitalPopup("Upload Successful!", `${file.name} (${sizeMB}) আপলোড সফল এবং লাইভ হয়ে গেছে!`);
+      } catch (err) {
+        progBox.classList.add('hidden');
+        progBar.style.width = "0%";
+        showDigitalPopup("আপলোড সম্পন্ন হয়নি", "ইন্টারনেট সংযোগ বা Firebase Storage Rules চেক করে আবার আপলোড করুন।", true);
       }
     }
 
     async function uploadMediaToFirebase(key, fileInputId, maxMB) {
       const fileInput = document.getElementById(fileInputId);
       const file = fileInput.files[0];
-      if (!file) return;
+      if (!file) {
+        showDigitalPopup("ছবি সিলেক্ট করুন", "দয়া করে একটি ছবি সিলেক্ট করুন।", true);
+        return;
+      }
+
+      if (file.size > maxMB * 1024 * 1024) {
+        showDigitalPopup("ছবির সাইজ বেশি", `ছবির সাইজ ${maxMB} MB-এর কম হতে হবে।`, true);
+        return;
+      }
 
       const progBox = document.getElementById(`prog_${key}`);
       const progBar = document.getElementById(`bar_${key}`);
       progBox.classList.remove('hidden');
-      progBar.style.width = "50%";
+      progBar.style.width = "35%";
 
-      const compressedUrl = await compressImageFast(file, key === 'logo' ? 450 : 750, 0.72);
-      const storageRef = storage.ref(`publicCab/${key}/${Date.now()}_${file.name}`);
-      const cloudUrl = await fastStorageRace(storageRef, file, progBar, 2000);
-      const finalUrl = cloudUrl || compressedUrl;
+      let finalUrl = "";
+      try {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const storageRef = storage.ref(`publicCab/${key}/${Date.now()}_${safeName}`);
+        finalUrl = await uploadToStorageComplete(storageRef, file, progBar);
+      } catch (e) {
+        finalUrl = await compressImageFast(file, key === 'logo' ? 450 : 750, 0.72);
+      }
 
+      if (!finalUrl) {
+        finalUrl = await compressImageFast(file, key === 'logo' ? 450 : 750, 0.72);
+      }
+
+      await db.ref(`publicCabSite/${key}`).set(finalUrl).catch(() => {});
+      renderAllUI({ ...appData, [key]: finalUrl });
+      progBar.style.width = "100%";
       fileInput.value = "";
-      commitInstantLive(
-        `publicCabSite/${key}`,
-        finalUrl,
-        progBox,
-        progBar,
+
+      setTimeout(() => {
+        progBox.classList.add('hidden');
+        progBar.style.width = "0%";
+      }, 300);
+
+      showDigitalPopup(
+        "Upload Successful!",
         key === 'logo' ? "ওয়েবসাইট লোগো আপলোড সফল এবং লাইভ!" : "গাইডলাইন ছবি আপলোড সফল এবং লাইভ!"
       );
     }
@@ -831,11 +856,11 @@
       if (key === 'logo' || key === 'guideline') {
         updated[key] = "";
       } else {
-        updated[key] = { url: "", size: "", fileName: "", ready: false };
+        updated[key] = { url: "", size: "", fileName: "" };
       }
       renderAllUI(updated);
       db.ref(`publicCabSite/${key}`).remove().catch(() => {});
-      showUploadSuccessSMS("সফলভাবে রিমুভ এবং লাইভ আপডেট করা হয়েছে!");
+      showDigitalPopup("Removed Live!", "সফলভাবে রিমুভ এবং লাইভ আপডেট করা হয়েছে!");
     }
 
     function saveSupportAndMeta() {
@@ -847,7 +872,7 @@
       const metaPayload = { whatsapp, call, version, downloads };
       renderAllUI({ ...appData, meta: metaPayload });
       db.ref('publicCabSite/meta').set(metaPayload).catch(() => {});
-      showUploadSuccessSMS("সাপোর্ট নম্বর ও অ্যাপ তথ্য লাইভ সেভ সাকসেসফুল!");
+      showDigitalPopup("Saved Live!", "সাপোর্ট নম্বর ও অ্যাপ তথ্য লাইভ সেভ সাকসেসফুল!");
     }
 
     function openModal(id) {
